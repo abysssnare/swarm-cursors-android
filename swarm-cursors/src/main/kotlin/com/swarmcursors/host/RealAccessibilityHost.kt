@@ -157,13 +157,15 @@ internal class RealNodeHandle(private val info: AccessibilityNodeInfo) : NodeHan
     }
 
     private fun performScroll(direction: ScrollDirection): Boolean {
+        // Directional scroll actions live on AccessibilityAction (API 23+),
+        // not as int constants on AccessibilityNodeInfo.
         val directional = when (direction) {
-            ScrollDirection.UP -> AccessibilityNodeInfo.ACTION_SCROLL_UP
-            ScrollDirection.DOWN -> AccessibilityNodeInfo.ACTION_SCROLL_DOWN
-            ScrollDirection.LEFT -> AccessibilityNodeInfo.ACTION_SCROLL_LEFT
-            ScrollDirection.RIGHT -> AccessibilityNodeInfo.ACTION_SCROLL_RIGHT
+            ScrollDirection.UP -> AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_UP
+            ScrollDirection.DOWN -> AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_DOWN
+            ScrollDirection.LEFT -> AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_LEFT
+            ScrollDirection.RIGHT -> AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_RIGHT
         }
-        if (info.performAction(directional)) return true
+        if (info.performAction(directional.id)) return true
         // Fallback for views that only support forward/backward scrolling.
         val fallback = when (direction) {
             ScrollDirection.DOWN, ScrollDirection.RIGHT ->

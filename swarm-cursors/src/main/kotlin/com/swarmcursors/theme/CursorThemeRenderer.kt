@@ -109,7 +109,7 @@ class DefaultCursorTheme : CursorThemeRenderer {
         scale: Float,
         density: Float,
     ) {
-        val size = BASE_SIZE_PX * density * scale.coerceAt(0.25f, 4f)
+        val size = BASE_SIZE_PX * density * scale.coerceIn(0.25f, 4f)
         val path = arrowPath(size)
 
         fillPaint.color = withAlpha(appearance.arrowColor, alpha)
