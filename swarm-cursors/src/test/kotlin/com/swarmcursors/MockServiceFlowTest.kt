@@ -49,7 +49,9 @@ class MockServiceFlowTest {
 
     @Test
     fun `typing reaches the node with set text`() = runEngineTest {
-        SwarmTestSupport.installMockService(listOf(testNode("input_name", left = 100f, top = 900f)))
+        SwarmTestSupport.installMockService(
+            listOf(testNode("input_name", left = 100f, top = 900f, bottom = 980f))
+        )
 
         val events = mutableListOf<ActionEvent>()
         SwarmCursors.injectActions(
