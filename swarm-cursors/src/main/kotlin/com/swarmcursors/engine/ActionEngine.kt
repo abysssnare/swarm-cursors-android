@@ -483,9 +483,16 @@ internal class ActionEngine(
                 if (framesDone % 15 == 0) {
                     val sizeNow = stage.screenSize()
                     if (sizeNow != assumedScreen) {
-                        val oldScreen = RectF(0f, 0f, assumedScreen.x, assumedScreen.y)
-                        val newScreen = RectF(0f, 0f, sizeNow.x, sizeNow.y)
-                        val remapped = path.to.remap(oldScreen, newScreen)
+                        val oldWidth = assumedScreen.x
+                        val oldHeight = assumedScreen.y
+                        val remapped = if (oldWidth > 0f && oldHeight > 0f) {
+                            PointF(
+                                path.to.x * (sizeNow.x / oldWidth),
+                                path.to.y * (sizeNow.y / oldHeight),
+                            )
+                        } else {
+                            path.to
+                        }
                         current = position
                         path = planner.plan(
                             from = current,

@@ -36,9 +36,6 @@ internal class OverlayController(
     private val windowManager: WindowManager
         get() = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
-    /** True when the overlay window is currently added. */
-    fun isAttached(): Boolean = view != null
-
     /** Adds the overlay window (idempotent). Must run on the main thread. */
     fun attach(): Boolean {
         if (Looper.myLooper() != Looper.getMainLooper()) {

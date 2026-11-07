@@ -1,10 +1,10 @@
 package com.swarmcursors.host
 
-import android.accessibilityservice.AccessibilityNodeInfo
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
 import android.graphics.Rect
 import android.os.Bundle
+import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
 import com.swarmcursors.core.geometry.RectF
 import com.swarmcursors.core.log.SwarmLog
@@ -30,7 +30,9 @@ internal class RealAccessibilityHost : AccessibilityHost {
         val raw = s.windows ?: return emptyList()
         return raw.mapNotNull { window ->
             // Spec §6.2: picture-in-picture windows never become targets.
-            if (window.type == AccessibilityWindowInfo.TYPE_PIP) return@mapNotNull null
+            // (AccessibilityWindowInfo.TYPE_PIP == 7; the symbolic constant
+            // is not visible on every compile SDK stub, hence the local one.)
+            if (window.type == WINDOW_TYPE_PIP) return@mapNotNull null
             val rect = Rect()
             window.getBoundsInScreen(rect)
             WindowTarget(
@@ -61,7 +63,6 @@ internal class RealAccessibilityHost : AccessibilityHost {
 
     override fun performGlobalAction(action: GlobalAction): Boolean =
         service?.performGlobalAction(action.code) ?: false
-
     override fun injectTap(x: Float, y: Float): Boolean {
         val s = service ?: return false
         return try {
@@ -76,6 +77,11 @@ internal class RealAccessibilityHost : AccessibilityHost {
             SwarmLog.e("dispatchGesture failed for tap at ($x, $y)", t)
             false
         }
+    }
+
+    companion object {
+        /** Mirrors the hidden-in-some-stubs `AccessibilityWindowInfo.TYPE_PIP`. */
+        private const val WINDOW_TYPE_PIP = 7
     }
 }
 

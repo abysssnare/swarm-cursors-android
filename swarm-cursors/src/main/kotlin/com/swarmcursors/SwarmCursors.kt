@@ -1,8 +1,8 @@
 package com.swarmcursors
 
-import android.app.ApplicationInfo
 import android.app.Notification
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.os.Handler
 import android.os.Looper
 import com.swarmcursors.core.log.SwarmLog
@@ -41,6 +41,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
 
 /**
  * Public entry point of the Swarm Cursors library.
