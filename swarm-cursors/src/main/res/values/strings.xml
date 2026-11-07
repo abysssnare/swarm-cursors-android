@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="swarm_service_label">Swarm Cursors</string>
+    <string name="swarm_service_description">Lets automated agents visualize and control this device with animated cursors. Required for agent-assisted automation.</string>
+    <string name="keep_alive_channel_name">Swarm Cursors keep-alive</string>
+    <string name="keep_alive_title">Swarm Cursors active</string>
+    <string name="keep_alive_text">Agent cursor service is running.</string>
+</resources>

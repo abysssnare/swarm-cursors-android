@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Swarm Cursors Sample</string>
+    <string name="status_initial">Service: checking…</string>
+    <string name="open_settings">Open accessibility settings</string>
+    <string name="run_mock_demo">Run mock demo (no service needed)</string>
+    <string name="inject_real_action">Inject real action (tap screen center)</string>
+    <string name="capture_snapshot">Capture snapshot</string>
+    <string name="list_windows">List windows</string>
+    <string name="show_metrics">Show metrics</string>
+    <string name="log_placeholder">— log —\n</string>
+</resources>
