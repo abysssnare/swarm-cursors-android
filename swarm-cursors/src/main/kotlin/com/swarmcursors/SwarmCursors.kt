@@ -243,9 +243,14 @@ object SwarmCursors {
      * Captures an interface snapshot (spec §5). Suspending; runs on the main
      * dispatcher because accessibility trees must be read there. Returns
      * null when the service is not ready or no root is available.
+     *
+     * Passing `null` uses [SnapshotConfig] defaults with the settle delay
+     * taken from [SwarmConfig.snapshotDelayMs].
      */
-    suspend fun captureSnapshot(config: SnapshotConfig = SnapshotConfig()): InterfaceSnapshot? =
-        snapshotEngine().capture(config)
+    suspend fun captureSnapshot(config: SnapshotConfig? = null): InterfaceSnapshot? {
+        val effective = config ?: SnapshotConfig(settleDelayMs = getConfig().snapshotDelayMs)
+        return snapshotEngine().capture(effective)
+    }
 
     // ------------------------------------------------------------------
     // §6 Multi-window
@@ -275,7 +280,7 @@ object SwarmCursors {
     @JvmStatic
     fun updateConfig(config: SwarmConfig) {
         val previous = configRef.getAndSet(config)
-        engine().onConcurrencyMaybeChanged()
+        engine?.onConcurrencyMaybeChanged()
         val coldFieldsChanged = previous.parallelMode != config.parallelMode ||
             previous.maxParallel != config.maxParallel
         if (coldFieldsChanged) {
@@ -344,12 +349,16 @@ object SwarmCursors {
     /** Stops workers, detaches the overlay and releases engine resources. */
     @JvmStatic
     fun shutdown() {
+        val controller = overlayController
         synchronized(lock) {
             engineScope?.cancel()
             engineScope = null
             engine = null
+            snapshotEngine = null
+            overlayController = null
         }
-        overlayController?.let { controller ->
+        if (controller != null) {
+            // Spec §2.2: remove the overlay window and free its surface.
             mainHandler.post { controller.detach() }
         }
         SwarmLog.i("SwarmCursors shut down")
@@ -365,8 +374,15 @@ object SwarmCursors {
             if (appContext == null) {
                 appContext = context.applicationContext
                 ServiceStateMonitor.start(appContext!!)
+                // §8.3: re-validate the debug overlay desire now that the
+                // application info is available.
                 if (debugOverlayDesired) {
-                    overlayController?.setDebugEnabled(true)
+                    val debuggable =
+                        (appContext!!.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+                    if (!debuggable) {
+                        debugOverlayDesired = false
+                        SwarmLog.w("setDebugOverlayEnabled ignored — release build")
+                    }
                 }
             }
         }

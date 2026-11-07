@@ -1,7 +1,6 @@
 package com.swarmcursors.core.geometry
 
 import kotlin.math.hypot
-import kotlin.math.sqrt
 
 /**
  * Minimal immutable 2D point (float) used across the library so that the
@@ -97,7 +96,5 @@ data class RectF(
             }
             return RectF(l, t, r, b)
         }
-
-        fun sqrt(value: Float): Float = sqrt(value)
     }
 }

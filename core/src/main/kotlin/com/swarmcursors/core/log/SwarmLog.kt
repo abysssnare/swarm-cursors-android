@@ -15,7 +15,7 @@ object SwarmLog {
 
     @Volatile
     private var sink: (LogLevel, String, String?, Throwable?) -> Unit =
-        { lvl: LogLevel, tag: String, message: String, error: Throwable? ->
+        { lvl: LogLevel, tag: String, message: String?, error: Throwable? ->
             when (lvl) {
                 LogLevel.ERROR -> println("E/$tag: $message${error?.let { " — $it" } ?: ""}")
                 LogLevel.WARN -> println("W/$tag: $message${error?.let { " — $it" } ?: ""}")

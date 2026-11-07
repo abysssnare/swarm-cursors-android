@@ -101,8 +101,16 @@ internal object ServiceStateMonitor {
         testOverride.set(override)
         if (override != null) {
             state.value = override
-        } else {
+            return
+        }
+        val startedNow = synchronized(lock) { started }
+        if (startedNow) {
             recompute()
+        } else {
+            // Never started: there is no settings context to consult, so the
+            // safe fallback is "not enabled" (keeps static state from
+            // leaking a stale Ready between tests).
+            state.value = ServiceState.NotEnabled
         }
     }
 }

@@ -19,14 +19,16 @@ class MotionPlannerTest {
     fun `adjacent samples stay within continuity budget for every style`() {
         val from = PointF(40f, 40f)
         val to = PointF(860f, 640f)
-        val distance = from.distanceTo(to) // ~ 1,112 px
+        val distance = from.distanceTo(to) // ~ 1,016 px
         for (style in MotionStyle.entries) {
-            // 50 samples over the path: budget 8% of total distance per step.
+            // 50 samples over the path; SPRING's peak slope is ~4× distance
+            // per unit t, so the budget must accommodate 4 × 2% ≈ 8-10% of
+            // the total distance per step.
             harness.assertInterpolationContinuity(
                 from = from,
                 to = to,
                 style = style,
-                maxStepDistancePx = distance * 0.08f,
+                maxStepDistancePx = distance * 0.11f,
                 seed = 42L,
             )
         }

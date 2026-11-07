@@ -18,6 +18,7 @@ import com.swarmcursors.host.GlobalAction
 import com.swarmcursors.security.AuditLogger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -38,6 +39,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  * All mutable bookkeeping is guarded by [lock]; worker bodies run on the
  * engine scope (main dispatcher).
  */
+@OptIn(FlowPreview::class)
 internal class ActionEngine(
     private val scope: CoroutineScope,
     private val hostProvider: () -> AccessibilityHost,
@@ -158,21 +160,6 @@ internal class ActionEngine(
             if (!shouldRun) continue
             try {
                 processTicket(active)
-            } catch (ce: CancellationException) {
-                throw ce
-            } catch (t: Throwable) {
-                SwarmLog.e("Ticket ${active.ticket.id} crashed", t)
-                active.trySend(
-                    ActionEvent.Failed(
-                        action = null,
-                        reason = FailureReason.EXECUTION_REJECTED,
-                        message = "internal error: ${t.message}",
-                    )
-                )
-                active.trySend(
-                    ActionEvent.TicketCompleted(active.ticket.id, 0, 1, 0)
-                )
-                active.events.close()
             } finally {
                 synchronized(lock) {
                     busyCursors.remove(active.cursorId)
@@ -213,6 +200,18 @@ internal class ActionEngine(
                     Outcome.CANCELLED -> cancelled++
                 }
             }
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (t: Throwable) {
+            SwarmLog.e("Ticket ${active.ticket.id} crashed", t)
+            active.trySend(
+                ActionEvent.Failed(
+                    action = null,
+                    reason = FailureReason.EXECUTION_REJECTED,
+                    message = "internal error: ${t.message}",
+                )
+            )
+            failed++
         } finally {
             active.trySend(
                 ActionEvent.TicketCompleted(active.ticket.id, succeeded, failed, cancelled)
@@ -277,7 +276,7 @@ internal class ActionEngine(
             stage.onTargetBounds(active.cursorId, bounds)
             val motion = runMotion(active, action, stage, point, widthPx, config)
 
-            when (motion) {
+            when (motion.outcome) {
                 MotionOutcome.CANCELLED -> {
                     stage.onCursorCancelled(active.cursorId)
                     active.trySend(ActionEvent.Cancelled(action, CancelStage.MOVING))
@@ -320,8 +319,8 @@ internal class ActionEngine(
                 return fail(active, action, FailureReason.EXECUTION_TIMEOUT, null, attempt)
             }
 
-            if (lastMotionFrameCount > 0) {
-                metrics.recordMotion(lastMotionFrameCount * MotionPlanner.FRAME_MS)
+            if (motion.frames > 0) {
+                metrics.recordMotion(motion.frames * MotionPlanner.FRAME_MS)
             }
 
             if (outcome is ExecutionOutcome.Stale) {
@@ -441,12 +440,10 @@ internal class ActionEngine(
         return ExecutionOutcome.Completed(ok, duration)
     }
 
-    private var lastMotionFrameCount: Int = 0
-
     /**
      * Animates the cursor to the target point. Frame-based so unit tests can
      * drive it with a virtual-time scheduler (spec §3.3 timeout via
-     * [withTimeoutOrNull]). Returns the number of rendered frames.
+     * [withTimeoutOrNull]).
      */
     private suspend fun runMotion(
         active: ActiveTicket,
@@ -455,7 +452,7 @@ internal class ActionEngine(
         target: PointF,
         targetWidthPx: Float,
         config: SwarmConfig,
-    ): MotionOutcome {
+    ): MotionResult {
         val cursorId = active.cursorId
         val label = if (config.enableActionLabel) action.type.name else null
         stage.onCursorShown(cursorId, label)
@@ -509,8 +506,7 @@ internal class ActionEngine(
             }
             MotionOutcome.COMPLETED
         }
-        lastMotionFrameCount = framesDone
-        return outcome ?: MotionOutcome.TIMEOUT
+        return MotionResult(outcome = outcome ?: MotionOutcome.TIMEOUT, frames = framesDone)
     }
 
     private fun spawnPoint(cursorId: Int, screen: PointF): PointF =
@@ -537,6 +533,12 @@ internal class ActionEngine(
         CANCELLED,
         TIMEOUT,
     }
+
+    /** Result of the motion phase: terminal outcome + rendered frames. */
+    private data class MotionResult(
+        val outcome: MotionOutcome,
+        val frames: Int,
+    )
 }
 
 /**

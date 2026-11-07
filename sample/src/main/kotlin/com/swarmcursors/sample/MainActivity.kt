@@ -12,8 +12,6 @@ import com.swarmcursors.core.model.ActionType
 import com.swarmcursors.core.model.AgentAction
 import com.swarmcursors.core.model.NodeSummary
 import com.swarmcursors.core.model.ServiceState
-import com.swarmcursors.core.model.SwarmConfig
-import com.swarmcursors.core.model.MotionStyle
 import com.swarmcursors.test.SwarmTestSupport
 import kotlinx.coroutines.launch
 
